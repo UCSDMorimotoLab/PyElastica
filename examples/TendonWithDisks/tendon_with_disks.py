@@ -1,6 +1,5 @@
 """
-This file uses PyElastica to model a tendon-driven robot with disks
-and visualizes its motion using matplotlib.
+This file uses PyElastica to model a tendon-driven robot with disks and visualizes its motion using matplotlib.
 
 The characteristics and dimensions of the tendon-driven robot with disks are the same as used in the 
 paper titled "How to Model Tendon-Driven Continuum Robots and Benchmark Modelling Performance" by Rao et al. 2021.
@@ -8,21 +7,19 @@ They are as follows:
 Disks:
     Number of disks: 10
     Disk radius: 10 mm (Distance from center of backbone to tendon attachment point)
-    Disk thickness: 7.5 mm
     Mass of each disk: 0.2 g
 Backbone:
-    Length: 400 mm
+    Length: 200 mm
     Radius: 0.7 mm
     Young's Modulus (E): 54*10^9 Pa 
     Poisson's Ratio (nu): 0.3
     Moment of Inertia (I): 1/4 * pi * radius^4
     Mass of backbone: 0.0115 kg/m
 Actuation:
-    Only one tendon will be pulled at a time to observe the bending motion of the robot.
+    Tendon will be pulled to observe the bending motion of the robot.
 Characteristics:
     Robot will be aligned with the z-axis at starting position.
-    It will contain 2 tendons symmetrically placed around the backbone at 180 degrees from each other.
-    Tendons will be located on the left and right sides of the backbone when looking along the positive z-axis.
+    It contains 1 tendon for actuation (more can be added).
 
 The modeling assumptions and principles are based on the Cosserat rod modeling theory presented in Caleb Rucker's thesis and on the 
 assumptions made in the paper titled "How to Model Tendon-Driven Continuum Robots and Benchmark Modelling Performance" by Rao et al. 2021.
@@ -83,19 +80,75 @@ class MyCallBack(CallBackBaseClass):
                 if np.isnan(vel).any():
                     print("NAN in velocity at step:", current_step, "time:", time)
                     sys.exit(1)
+                # Note: A rod has N elements with N+1 nodes and N-1 voronoi elements
+                # Simulation time
                 self.callback_params["time"].append(time)
+                # Stores 3D position coordinates of all nodes of the rod at the current time
                 self.callback_params["position"].append(system.position_collection.copy())
+                # Adds current simulation step number
                 self.callback_params["step"].append(current_step)
+                # Stores element director matrices (3 x 3) of all elements of the rod at the current time (directors = rotation matrices)
                 self.callback_params["directors"].append(system.director_collection.copy())
+                # Stores 3D velocity components of all nodes of the rod at the current time
                 self.callback_params["velocity"].append(system.velocity_collection.copy())
+                # Stores 3D acceleration components of all nodes of the rod at the current time
+                self.callback_params["acceleration"].append(system.acceleration_collection.copy())
+                # Stores 3D angular velocity components of all elements of the rod at the current time
+                self.callback_params["angular_velocity"].append(system.omega_collection.copy())
+                # Stores 3D angular acceleration components of all elements of the rod at the current time
+                self.callback_params["angular_acceleration"].append(system.alpha_collection.copy())
+                # Stores rod element lengths at rest configuration (1D (n_elements) array)
+                self.callback_params["rest_lengths"].append(system.rest_lengths.copy())
+                # Stores rod elements densities (1D (n_elements) array)
+                self.callback_params["densities"].append(system.density.copy())
+                # Stores rod elements volume (1D (n_elements) array)
+                self.callback_params["volumes"].append(system.volume.copy())
+                # Stores rod node masses (1D (n_nodes) array)
+                self.callback_params["masses"].append(system.mass.copy())
+                # Stores rod element mass second moment of intertia (3x3) at the current time
+                self.callback_params["mass_second_moments_of_inertia"].append(system.mass_second_moment_of_inertia.copy())
+                # Stores rod element inverse mass moment of inertia (3x3) at the current time
+                self.callback_params["inv_mass_second_moments_of_inertia"].append(system.inv_mass_second_moment_of_inertia.copy())
+                # Stores rod lengths on the voronoi domain at the rest configuration (1D (n_voronoi) array)
+                self.callback_params["rest_voronoi_lengths"].append(system.rest_voronoi_lengths.copy())
+                # Stores 3D internal force components for all nodes of the rod at the current time
+                self.callback_params["internal_forces"].append(system.internal_forces.copy())
+                # Stores 3D internal torque components for all elements of the rod at the current time
+                self.callback_params["internal_torques"].append(system.internal_torques.copy())
+                # Stores 3D external force components acting on rod nodes at the current time
                 self.callback_params["external_forces"].append(system.external_forces.copy())
+                # Stores 3D external torque components acting on rod elements at the current time
                 self.callback_params["external_torques"].append(system.external_torques.copy())
+                # Stores rod element lengths (1D (n_elements) array) at the current time
+                self.callback_params["lengths"].append(system.lengths.copy())
+                # Stores 3D tangent vectors of all elements of the rod at the current time
+                self.callback_params["tangents"].append(system.tangents.copy())
+                # Stores rod element radius (1D (n_elements) array)
+                self.callback_params["radii"].append(system.radius.copy())
+                # Stores rod element dilatation (1D (n_elements) array)
+                self.callback_params["dilatations"].append(system.dilatation.copy())
+                # Stores rod dilatation on voronoi domain (1D (n_voronoi) array)
+                self.callback_params["voronoi_dilatation"].append(system.voronoi_dilatation.copy())
+                # Stores rod element dilatation rates (1D (n_elements) array)
+                self.callback_params["dilatation_rates"].append(system.dilatation_rate.copy())
+                # Stores bend/twist strain vector of all elements of the rod at the current time (First two values per element correspond to normal and binormal bending curvatures respectively and third value is the twist/torsion)
+                self.callback_params["curvature"].append(system.kappa.copy())
+                # Stores resting bend/twist strain vector of all elements of the rod
+                self.callback_params["rest_curvature"].append(system.rest_kappa.copy())
+                # Stores shear/stretch strain of all nodes of the rod at the current time
+                self.callback_params["sigma"].append(system.sigma.copy())
+                # Stores resting shear/stretch strain of all nodes of the rod
+                self.callback_params["rest_sigma"].append(system.rest_sigma.copy())
+                # Stores internal stress of all nodes of the rod at the current time
+                self.callback_params["internal_stress"].append(system.internal_stress.copy())
+                # Stores the internal couple (internal torques and bending moments) of all elements of the rod at the current time
+                self.callback_params["internal_couple"].append(system.internal_couple.copy()) 
 
 # Create simulator instance
 simulator = TendonDrivenWithDisksSimulator()
 
 # Define rod parameters
-n_elements = 100
+n_elements = 40
 base_length = 200e-3 # in meters
 base_radius = 0.7e-3 # in meters
 start = np.array([0.0, 0.0, 0.0])
@@ -104,12 +157,13 @@ normal = np.array([1.0, 0.0, 0.0])
 E = 54e9  # Young's modulus in Pa
 nu = 0.3  # Poisson's ratio
 G = E / (2 * (1 + nu))  # Shear modulus in Pa
-density = (0.0115 * 200e-3) / (np.pi * base_radius**2 * base_length)  # Density in kg/m^3
+mass_second_moment_of_inertia = 0.25 * np.pi * base_radius**4
+density = (0.0115 * base_length) / (np.pi * base_radius**2 * base_length)  # Density in kg/m^3
 dtmax = (base_length/n_elements) * np.sqrt(density / max(E, G)) # Maximum size of time step
 print("Maximum time_step magnitude: ",dtmax)
 
 # Define simulation parameters
-final_time = 1.0 # in seconds
+final_time = 2.0 # in seconds
 time_step = min(1.0e-6, 0.5*dtmax) # in seconds
 total_steps = int(final_time / time_step)
 step_skip = 1500 
@@ -125,7 +179,9 @@ rod1 = CosseratRod.straight_rod(
     density=density,                              # Density of rod (kg/m^3)
     youngs_modulus=E,                             # Elastic Modulus (Pa)
     shear_modulus=G,                              # Shear Modulus (Pa)
+    mass_second_moment_of_inertia=mass_second_moment_of_inertia, # Mass moment of inertia (m^4)
 )
+
 
 # Append rod to simulator
 simulator.append(rod1)
@@ -140,13 +196,13 @@ simulator.constrain(rod1).using(
 # Actuate the tendon (add tension to the tendon) --> apply forces and torques on rod caused by tendon
 tension = 5 # in Newtons
 simulator.add_forcing_to(rod1).using(
-    TendonForces,                       # Tendon forcing with gravity on disks
-    vertebra_height = 0.007,            # Height of each disk (m)
-    num_vertebrae = 10,                 # Number of disks
-    first_vertebra_node = 10,           # First node with disk
-    final_vertebra_node = 100,          # Last node with disk
-    tension = tension,                  # Tension in the tendon (N)
-    vertebra_height_orientation = np.array([0.0, 1.0, 0.0]), # Sets tendon to the right of the backbone
+    TendonForces,                      # Tendon forcing with gravity on disks
+    vertebra_radius = 0.01,            # Distance from center of backbone to tendon attachment point (m)
+    num_vertebrae = 10,                # Number of disks
+    first_vertebra_node = 4,           # First node with disk
+    final_vertebra_node = 39,          # Last node with disk
+    tension = tension,                 # Tension in the tendon (N)
+    vertebra_radius_orientation = np.array([1.0, 0.0, 0.0]), # Sets tendon to the right of the backbone
     n_elements = n_elements             # Total number of elements in the rod
 )
 
@@ -164,8 +220,32 @@ callback_data_rod1 = {
     "step": [],
     "directors": [],
     "velocity": [],
+    "acceleration": [],
+    "angular_velocity": [],
+    "angular_acceleration": [],
+    "rest_lengths": [],
+    "densities": [],
+    "volumes": [],
+    "masses": [],
+    "mass_second_moments_of_inertia": [],
+    "inv_mass_second_moments_of_inertia": [],
+    "rest_voronoi_lengths": [],
+    "internal_forces": [],
+    "internal_torques": [],
     "external_forces": [],
     "external_torques": [],
+    "lengths": [],
+    "tangents": [],
+    "radii": [],
+    "dilatations": [],
+    "voronoi_dilatation": [],
+    "dilatation_rates": [],
+    "curvature": [],
+    "rest_curvature": [],
+    "sigma": [],
+    "rest_sigma": [],
+    "internal_stress": [],
+    "internal_couple": [],
 }
 
 # Add callback to the simulator
@@ -216,8 +296,8 @@ if n_frames == 0:
 positions = np.stack(positions_list, axis=0) 
 _, _, n_nodes = positions.shape
 
-first_vertebra_node = 10
-final_vertebra_node = 100
+first_vertebra_node = 4
+final_vertebra_node = 40
 num_vertebrae = 10
 
 vertebra_nodes = np.linspace(first_vertebra_node, final_vertebra_node, num_vertebrae, dtype=int)
@@ -225,8 +305,8 @@ vertebra_nodes = np.linspace(first_vertebra_node, final_vertebra_node, num_verte
 # Build the figure
 fig = plt.figure(figsize=(9, 7))
 ax = fig.add_subplot(111, projection="3d")
-# Force view onto the YZ plane (looking along X)
-# ax.view_init(elev=0, azim=0)
+# Force view onto the YZ plane (looking along X) when azim = 0, azim = 90 is looking down Y
+ax.view_init(elev=0, azim=-90) 
 ax.set_xlabel("X (m)")
 ax.set_ylabel("Y (m)")
 ax.set_zlabel("Z (m)")
@@ -249,6 +329,23 @@ ym = positions[-1, 1, n_nodes // 2]
 zm = positions[-1, 2, n_nodes // 2]
 print("Final midpoint position: ", xm, ym, zm)
 
+# calculate final curvature (and radius of curvature) of robot
+strain_vals = callback_data_rod1["curvature"][-1]  # shape (3, n_elements)
+# Uncomment the line below if there are two segments in the rod
+# strain_vals = strain_vals[:, : n_elements // 2] 
+curvature_magnitudes = np.linalg.norm(strain_vals[:2, :], axis=0)  # shape (n_elements,)
+avg_curvature = np.mean(curvature_magnitudes)
+avg_radius_of_curvature = 1.0 / avg_curvature 
+print("Final robot curvature (1/m): " , avg_curvature)
+print("Final robot radius of curvature (m): " , avg_radius_of_curvature)
+
+# Obtain position data for disk location at the end of simulation
+x_disk = positions[-1, 0, vertebra_nodes]
+y_disk = positions[-1, 1, vertebra_nodes]
+z_disk = positions[-1, 2, vertebra_nodes]
+print("Final disk positions (x, y, z):")
+for i in range(num_vertebrae):
+    print(f"Disk {i+1}: ({x_disk[i]}, {y_disk[i]}, {z_disk[i]})")
 
 # backbone line 
 (backbone_line,) = ax.plot(x0, y0, z0, lw=2, label="backbone")
@@ -313,6 +410,6 @@ anim = animation.FuncAnimation(
 )
 
 # Save animation as MP4 video
-# anim.save("tdcr_sim_5N__400e-3_3min.mp4", fps=30, dpi=200, writer="ffmpeg")
+# anim.save("01-06_tdr_2seg_5N_xdir.mp4", fps=30, dpi=200, writer="ffmpeg")
 
 plt.show()
