@@ -82,7 +82,7 @@ class GravityForces(NoForces):
             [0.0, -9.80665, 0.0]
         ),  # FIXME: avoid mutable default
     ) -> None:
-        """
+        """   
 
         Parameters
         ----------
